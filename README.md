@@ -19,8 +19,11 @@ For more information, reference the GitHub Help Documentation for [Creating a wo
 
 ### Inputs
 
+- `version`: The version number to use.
 - `token`: The GitHub token to use for the commit.
 - `path`: The path to the file within the repository.
+
+For information on how GitHub actions tokens work, read more [here](https://help.github.com/en/actions/automating-your-workflow-with-github-actions/authenticating-with-the-github_token#about-the-github_token-secret).
 
 ### Example Workflow
 
@@ -44,6 +47,7 @@ jobs:
       - name: Get current version
         uses: dolittle/write-version-to-file-action@v2
         with:
+          version: ${{ steps.context.outputs.current-version }}
           token: ${{ secrets.GITHUB_TOKEN }}
           path: ./Source/version.json
 ```
