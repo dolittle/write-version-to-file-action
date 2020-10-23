@@ -96,6 +96,7 @@ export async function run() {
         logger.info('Got octokit');
 
         const currentRepo = github.context.repo;
+        const currentRef = github.context.ref.replace('refs/', '');
 
         logger.info(`Current repo ${currentRepo.owner} - ${currentRepo.repo}`);
 
@@ -110,9 +111,9 @@ export async function run() {
         logger.info(`Writing version info : ${versionInfoAsString}`);
         await fs.promises.writeFile(path, versionInfoAsString);
 
-        logger.info(`Get current commit for ref ${github.context.ref}`);
+        logger.info(`Get current commit for ref ${currentRef}`);
 
-        const currentCommit = await getCurrentCommit(octokit, currentRepo.owner, currentRepo.repo, github.context.ref);
+        const currentCommit = await getCurrentCommit(octokit, currentRepo.owner, currentRepo.repo, currentRef);
 
         logger.info(`Current commit : ${currentCommit}`);
 
