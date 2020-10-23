@@ -96,7 +96,8 @@ export async function run() {
         logger.info('Got octokit');
 
         const currentRepo = github.context.repo;
-        const currentRef = github.context.ref.replace('refs/', '');
+        let currentRef = github.context.ref.replace('refs/', '');
+        currentRef = 'master';
 
         logger.info(`Current repo ${currentRepo.owner} - ${currentRepo.repo}`);
 
