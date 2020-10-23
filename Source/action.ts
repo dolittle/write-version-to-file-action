@@ -90,7 +90,7 @@ export async function run() {
 
 
         logger.info('Get octokit');
-        
+
         const octokit = github.getOctokit(token);
 
         logger.info('Got octokit');
