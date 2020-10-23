@@ -25,7 +25,6 @@
     "@actions/core": "^1.2.4",
     "@actions/github": "4.0.0",
     "@dolittle/github-actions.shared.logging": "^1.1.1",
-    "@dolittle/github-actions.shared.rudiments": "^1.1.1",
-    "ts-node": "^9.0.0"
+    "@dolittle/github-actions.shared.rudiments": "^1.1.1"
   }
 }

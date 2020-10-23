@@ -97,7 +97,6 @@ export async function run() {
 
         const currentRepo = github.context.repo;
         let currentRef = github.context.ref.replace('refs/', '');
-        currentRef = 'heads/master';
 
         logger.info(`Current repo ${currentRepo.owner} - ${currentRepo.repo}`);
 
