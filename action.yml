@@ -1,0 +1,14 @@
+name: 'The Action Name'
+description: 'The action description'
+inputs:
+  someInput:
+    description: Description of the input
+    required: true
+
+outputs:
+  output:
+    description: Description of the output
+  
+runs:
+  using: 'node12'
+  main: 'release/index.js'
