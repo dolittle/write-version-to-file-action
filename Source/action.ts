@@ -86,14 +86,23 @@ export async function run() {
         logger.info(`Path : ${path}`);
         logger.info(`Version: ${version}`);
 
+        logger.info(`Token: ${token}`);
+
+
+        logger.info('Get octokit');
+        
         const octokit = github.getOctokit(token);
 
+        logger.info('Got octokit');
+
         const currentRepo = github.context.repo;
+
+        logger.info(`Current repo ${currentRepo}`);
 
         const versionInfo = {
             version: version,
             commit: github.context.sha,
-            built: new Date().toDateString()
+            built: new Date().toISOString()
         };
 
         const versionInfoAsString = JSON.stringify(versionInfo);
