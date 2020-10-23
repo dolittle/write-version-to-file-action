@@ -13,19 +13,19 @@ const logger = new Logger();
 
 async function getCurrentCommit(
     octo: Octokit,
-    org: string,
+    owner: string,
     repo: string,
-    branch: string = 'master') {
+    ref: string) {
 
     const { data: refData } = await octo.git.getRef({
-        owner: org,
+        owner,
         repo,
-        ref: `heads/${branch}`,
+        ref,
     });
 
     const commitSha = refData.object.sha;
     const { data: commitData } = await octo.git.getCommit({
-        owner: org,
+        owner: owner,
         repo,
         commit_sha: commitSha,
     });
