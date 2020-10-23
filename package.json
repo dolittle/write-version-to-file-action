@@ -13,7 +13,8 @@
     "test": "gulp test --gulpfile node_modules/@dolittle/typescript.build/Gulpfile.js",
     "test:run": "gulp test-run --gulpfile node_modules/@dolittle/typescript.build/Gulpfile.js",
     "test:clean": "gulp test-clean --gulpfile node_modules/@dolittle/typescript.build/Gulpfile.js",
-    "release": "yarn build && yarn test:run && yarn test:clean && npx ncc build Distribution/action.js --out release"
+    "release": "yarn build && yarn test:run && yarn test:clean && npx ncc build Distribution/action.js --out release",
+    "dev": "ts-node index.ts"
   },
   "devDependencies": {
     "@dolittle/typescript.build": "^5.3.6",
@@ -24,6 +25,7 @@
     "@actions/core": "^1.2.4",
     "@actions/github": "4.0.0",
     "@dolittle/github-actions.shared.logging": "^1.1.1",
-    "@dolittle/github-actions.shared.rudiments": "^1.1.1"
+    "@dolittle/github-actions.shared.rudiments": "^1.1.1",
+    "ts-node": "^9.0.0"
   }
 }
