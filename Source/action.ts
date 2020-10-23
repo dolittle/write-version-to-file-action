@@ -97,7 +97,7 @@ export async function run() {
 
         const currentRepo = github.context.repo;
 
-        logger.info(`Current repo ${currentRepo}`);
+        logger.info(`Current repo ${currentRepo.owner} - ${currentRepo.repo}`);
 
         const versionInfo = {
             version: version,
@@ -110,7 +110,7 @@ export async function run() {
         logger.info(`Writing version info : ${versionInfoAsString}`);
         await fs.promises.writeFile(path, versionInfoAsString);
 
-        logger.info('Get current commit');
+        logger.info(`Get current commit for ref ${github.context.ref}`);
 
         const currentCommit = await getCurrentCommit(octokit, currentRepo.owner, currentRepo.repo, github.context.ref);
 
