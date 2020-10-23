@@ -151,7 +151,6 @@ export async function run() {
     }
 }
 
-
 function fail(error: Error) {
     logger.error(error.message);
     core.setFailed(error.message);
