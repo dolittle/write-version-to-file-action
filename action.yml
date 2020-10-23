@@ -1,0 +1,16 @@
+name: 'Write Version To File'
+description: 'Writes version information to a structured JSON file and commits the file'
+inputs:
+  token:
+    description: The GitHub api token used to commit the file
+    required: true
+  path:
+    description: The path to the version file to output
+    required: true
+  version:
+    description: The version number to use
+    required: true
+ 
+runs:
+  using: 'node12'
+  main: 'release/index.js'
