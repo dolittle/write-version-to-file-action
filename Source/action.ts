@@ -3,14 +3,139 @@
 
 import * as core from '@actions/core';
 import { Logger } from '@dolittle/github-actions.shared.logging';
+import * as github from '@actions/github';
+
+import { Octokit } from '@octokit/core';
+
+import * as fs from 'fs';
 
 const logger = new Logger();
+
+async function getCurrentCommit(
+    octo: Octokit,
+    org: string,
+    repo: string,
+    branch: string = 'master') {
+
+    const { data: refData } = await octo.git.getRef({
+        owner: org,
+        repo,
+        ref: `heads/${branch}`,
+    });
+
+    const commitSha = refData.object.sha;
+    const { data: commitData } = await octo.git.getCommit({
+        owner: org,
+        repo,
+        commit_sha: commitSha,
+    });
+
+    return {
+        commitSha,
+        treeSha: commitData.tree.sha,
+    };
+}
+
+async function createNewTree(
+    octo: Octokit,
+    owner: string,
+    repo: string,
+    blobs: any[],
+    paths: string[],
+    parentTreeSha: string) {
+
+    // My custom config. Could be taken as parameters
+    const tree = blobs.map(({ sha }, index) => ({
+        path: paths[index],
+        mode: '100644',
+        type: 'blob',
+        sha,
+    }));
+
+    const { data } = await octo.git.createTree({
+        owner,
+        repo,
+        tree,
+        base_tree: parentTreeSha,
+    });
+
+    return data;
+}
+
+const getFileAsUTF8 = (filePath: string) => fs.promises.readFile(filePath, 'utf8');
+
+async function createBlobForFile(octo: Octokit, org: string, repo: string, filePath: string) {
+    const content = await getFileAsUTF8(filePath);
+    const blobData = await octo.git.createBlob({
+        owner: org,
+        repo,
+        content,
+        encoding: 'utf-8',
+    });
+
+    return blobData.data;
+}
 
 run();
 export async function run() {
     try {
-        // Put your code in here
+        const path = core.getInput('path', { required: true });
+        const version = core.getInput('version', { required: true });
+        const token = core.getInput('token', { required: true });
+
+        logger.info(`Path : ${path}`);
+        logger.info(`Version: ${version}`);
+
+        const octokit = github.getOctokit(token);
+
+        const currentRepo = github.context.repo;
+
+        const versionInfo = {
+            version: version,
+            commit: github.context.sha,
+            built: new Date().toDateString()
+        };
+
+        const versionInfoAsString = JSON.stringify(versionInfo);
+
+        logger.info(`Writing version info : ${versionInfoAsString}`);
+        await fs.promises.writeFile(path, versionInfoAsString);
+
+        logger.info('Get current commit');
+
+        const currentCommit = await getCurrentCommit(octokit, currentRepo.owner, currentRepo.repo, github.context.ref);
+
+        logger.info(`Current commit : ${currentCommit}`);
+
+        const blob = await createBlobForFile(octokit, currentRepo.owner, currentRepo.repo, path);
+
+        logger.info('Blob created');
+
+        const tree = await createNewTree(octokit, currentRepo.owner, currentRepo.repo, [blob], [path], currentCommit.treeSha);
+        logger.info('Tree created');
+
+        const newCommit = await octokit.git.createCommit({
+            owner: currentRepo.owner,
+            repo: currentRepo.repo,
+            message: 'Updating version information',
+            tree: tree.sha,
+            parents: [currentCommit.commitSha]
+        });
+
+        logger.info('New commit created');
+
+        await octokit.git.updateRef({
+            owner: currentRepo.owner,
+            repo: currentRepo.repo,
+            ref: github.context.ref,
+            sha: newCommit.data.sha
+        });
+
+        logger.info('Ref updated');
+
+
     } catch (error) {
+        logger.info(`Error : ${error}`);
         fail(error);
     }
 }
