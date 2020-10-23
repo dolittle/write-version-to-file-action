@@ -138,7 +138,7 @@ export async function run() {
         await octokit.git.updateRef({
             owner: currentRepo.owner,
             repo: currentRepo.repo,
-            ref: github.context.ref,
+            ref: currentRef,
             sha: newCommit.data.sha
         });
 
