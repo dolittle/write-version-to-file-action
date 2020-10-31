@@ -86,19 +86,10 @@ export async function run() {
         logger.info(`Path : ${path}`);
         logger.info(`Version: ${version}`);
 
-        logger.info(`Token: ${token}`);
-
-
-        logger.info('Get octokit');
-
         const octokit = github.getOctokit(token);
-
-        logger.info('Got octokit');
 
         const currentRepo = github.context.repo;
         const currentRef = github.context.ref.replace('refs/', '');
-
-        logger.info(`Current context: ${github.context}`);
 
         logger.info(`Current repo ${currentRepo.owner} - ${currentRepo.repo}`);
 
@@ -110,22 +101,13 @@ export async function run() {
 
         const versionInfoAsString = JSON.stringify(versionInfo);
 
-        logger.info(`Writing version info : ${versionInfoAsString}`);
         await fs.promises.writeFile(path, versionInfoAsString);
-
-        logger.info(`Get current commit for ref ${currentRef}`);
 
         const currentCommit = await getCurrentCommit(octokit, currentRepo.owner, currentRepo.repo, currentRef);
 
-        logger.info(`Current commit : ${currentCommit}`);
-
         const blob = await createBlobForFile(octokit, currentRepo.owner, currentRepo.repo, path);
 
-        logger.info('Blob created');
-
         const tree = await createNewTree(octokit, currentRepo.owner, currentRepo.repo, [blob], [path], currentCommit.treeSha);
-        logger.info('Tree created');
-
         const newCommit = await octokit.git.createCommit({
             owner: currentRepo.owner,
             repo: currentRepo.repo,
@@ -134,8 +116,6 @@ export async function run() {
             parents: [currentCommit.commitSha]
         });
 
-        logger.info('New commit created');
-
         await octokit.git.updateRef({
             owner: currentRepo.owner,
             repo: currentRepo.repo,
@@ -143,9 +123,7 @@ export async function run() {
             sha: newCommit.data.sha
         });
 
-        logger.info('Ref updated');
-
-
+        logger.info('Version updated, written and committed');
     } catch (error) {
         logger.info(`Error : ${error}`);
         fail(error);
