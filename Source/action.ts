@@ -98,6 +98,8 @@ export async function run() {
         const currentRepo = github.context.repo;
         let currentRef = github.context.ref.replace('refs/', '');
 
+        logger.info(`Current context: ${github.context}`);
+
         logger.info(`Current repo ${currentRepo.owner} - ${currentRepo.repo}`);
 
         const versionInfo = {
