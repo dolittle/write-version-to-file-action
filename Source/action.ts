@@ -5,6 +5,7 @@ import * as core from '@actions/core';
 import { Logger } from '@dolittle/github-actions.shared.logging';
 import * as github from '@actions/github';
 
+import editJsonFile from 'edit-json-file';
 import { Octokit } from '@octokit/core';
 
 import * as fs from 'fs';
@@ -93,15 +94,11 @@ export async function run() {
 
         logger.info(`Current repo ${currentRepo.owner} - ${currentRepo.repo}`);
 
-        const versionInfo = {
-            version: version,
-            commit: github.context.sha,
-            built: new Date().toISOString()
-        };
-
-        const versionInfoAsString = JSON.stringify(versionInfo);
-
-        await fs.promises.writeFile(path, versionInfoAsString);
+        const file = editJsonFile(path);
+        file.set('version', version);
+        file.set('commit', github.context.sha);
+        file.set('built', new Date().toISOString());
+        file.save();
 
         const currentCommit = await getCurrentCommit(octokit, currentRepo.owner, currentRepo.repo, currentRef);
 
