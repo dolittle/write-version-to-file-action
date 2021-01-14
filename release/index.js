@@ -188,11 +188,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.run = void 0;
 const core = __importStar(__webpack_require__(470));
 const github_actions_shared_logging_1 = __webpack_require__(83);
 const github = __importStar(__webpack_require__(469));
+const edit_json_file_1 = __importDefault(__webpack_require__(827));
 const fs = __importStar(__webpack_require__(747));
 const logger = new github_actions_shared_logging_1.Logger();
 function getCurrentCommit(octo, owner, repo, ref) {
@@ -254,29 +258,18 @@ function run() {
             const token = core.getInput('token', { required: true });
             logger.info(`Path : ${path}`);
             logger.info(`Version: ${version}`);
-            logger.info(`Token: ${token}`);
-            logger.info('Get octokit');
             const octokit = github.getOctokit(token);
-            logger.info('Got octokit');
             const currentRepo = github.context.repo;
             const currentRef = github.context.ref.replace('refs/', '');
-            logger.info(`Current context: ${github.context}`);
             logger.info(`Current repo ${currentRepo.owner} - ${currentRepo.repo}`);
-            const versionInfo = {
-                version: version,
-                commit: github.context.sha,
-                built: new Date().toISOString()
-            };
-            const versionInfoAsString = JSON.stringify(versionInfo);
-            logger.info(`Writing version info : ${versionInfoAsString}`);
-            yield fs.promises.writeFile(path, versionInfoAsString);
-            logger.info(`Get current commit for ref ${currentRef}`);
+            const file = edit_json_file_1.default(path);
+            file.set('version', version);
+            file.set('commit', github.context.sha);
+            file.set('built', new Date().toISOString());
+            file.save();
             const currentCommit = yield getCurrentCommit(octokit, currentRepo.owner, currentRepo.repo, currentRef);
-            logger.info(`Current commit : ${currentCommit}`);
             const blob = yield createBlobForFile(octokit, currentRepo.owner, currentRepo.repo, path);
-            logger.info('Blob created');
             const tree = yield createNewTree(octokit, currentRepo.owner, currentRepo.repo, [blob], [path], currentCommit.treeSha);
-            logger.info('Tree created');
             const newCommit = yield octokit.git.createCommit({
                 owner: currentRepo.owner,
                 repo: currentRepo.repo,
@@ -284,14 +277,13 @@ function run() {
                 tree: tree.sha,
                 parents: [currentCommit.commitSha]
             });
-            logger.info('New commit created');
             yield octokit.git.updateRef({
                 owner: currentRepo.owner,
                 repo: currentRepo.repo,
                 ref: currentRef,
                 sha: newCommit.data.sha
             });
-            logger.info('Ref updated');
+            logger.info('Version updated, written and committed');
         }
         catch (error) {
             logger.info(`Error : ${error}`);
@@ -305,8 +297,168 @@ function fail(error) {
     core.setFailed(error.message);
 }
 
-//# sourceMappingURL=data:application/json;charset=utf8;base64,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RUFBRSxXQUFXLENBQUMsS0FBSztnQkFDeEIsSUFBSSxFQUFFLFdBQVcsQ0FBQyxJQUFJO2dCQUN0QixHQUFHLEVBQUUsVUFBVTtnQkFDZixHQUFHLEVBQUUsU0FBUyxDQUFDLElBQUksQ0FBQyxHQUFHO2FBQzFCLENBQUMsQ0FBQztZQUVILE1BQU0sQ0FBQyxJQUFJLENBQUMsYUFBYSxDQUFDLENBQUM7U0FHOUI7UUFBQyxPQUFPLEtBQUssRUFBRTtZQUNaLE1BQU0sQ0FBQyxJQUFJLENBQUMsV0FBVyxLQUFLLEVBQUUsQ0FBQyxDQUFDO1lBQ2hDLElBQUksQ0FBQyxLQUFLLENBQUMsQ0FBQztTQUNmO0lBQ0wsQ0FBQztDQUFBO0FBekVELGtCQXlFQztBQUVELFNBQVMsSUFBSSxDQUFDLEtBQVk7SUFDdEIsTUFBTSxDQUFDLEtBQUssQ0FBQyxLQUFLLENBQUMsT0FBTyxDQUFDLENBQUM7SUFDNUIsSUFBSSxDQUFDLFNBQVMsQ0FBQyxLQUFLLENBQUMsT0FBTyxDQUFDLENBQUM7QUFDbEMsQ0FBQyIsImZpbGUiOiJhY3Rpb24uanMiLCJzb3VyY2VzQ29udGVudCI6WyIvLyBDb3B5cmlnaHQgKGMpIERvbGl0dGxlLiBBbGwgcmlnaHRzIHJlc2VydmVkLlxuLy8gTGljZW5zZWQgdW5kZXIgdGhlIE1JVCBsaWNlbnNlLiBTZWUgTElDRU5TRSBmaWxlIGluIHRoZSBwcm9qZWN0IHJvb3QgZm9yIGZ1bGwgbGljZW5zZSBpbmZvcm1hdGlvbi5cblxuaW1wb3J0ICogYXMgY29yZSBmcm9tICdAYWN0aW9ucy9jb3JlJztcbmltcG9ydCB7IExvZ2dlciB9IGZyb20gJ0Bkb2xpdHRsZS9naXRodWItYWN0aW9ucy5zaGFyZWQubG9nZ2luZyc7XG5pbXBvcnQgKiBhcyBnaXRodWIgZnJvbSAnQGFjdGlvbnMvZ2l0aHViJztcblxuaW1wb3J0IHsgT2N0b2tpdCB9IGZyb20gJ0BvY3Rva2l0L2NvcmUnO1xuXG5pbXBvcnQgKiBhcyBmcyBmcm9tICdmcyc7XG5cbmNvbnN0IGxvZ2dlciA9IG5ldyBMb2dnZXIoKTtcblxuYXN5bmMgZnVuY3Rpb24gZ2V0Q3VycmVudENvbW1pdChcbiAgICBvY3RvOiBPY3Rva2l0LFxuICAgIG93bmVyOiBzdHJpbmcsXG4gICAgcmVwbzogc3RyaW5nLFxuICAgIHJlZjogc3RyaW5nKSB7XG5cbiAgICBjb25zdCB7IGRhdGE6IHJlZkRhdGEgfSA9IGF3YWl0IG9jdG8uZ2l0LmdldFJlZih7XG4gICAgICAgIG93bmVyLFxuICAgICAgICByZXBvLFxuICAgICAgICByZWYsXG4gICAgfSk7XG5cbiAgICBjb25zdCBjb21taXRTaGEgPSByZWZEYXRhLm9iamVjdC5zaGE7XG4gICAgY29uc3QgeyBkYXRhOiBjb21taXREYXRhIH0gPSBhd2FpdCBvY3RvLmdpdC5nZXRDb21taXQoe1xuICAgICAgICBvd25lcjogb3duZXIsXG4gICAgICAgIHJlcG8sXG4gICAgICAgIGNvbW1pdF9zaGE6IGNvbW1pdFNoYSxcbiAgICB9KTtcblxuICAgIHJldHVybiB7XG4gICAgICAgIGNvbW1pdFNoYSxcbiAgICAgICAgdHJlZVNoYTogY29tbWl0RGF0YS50cmVlLnNoYSxcbiAgICB9O1xufVxuXG5hc3luYyBmdW5jdGlvbiBjcmVhdGVOZXdUcmVlKFxuICAgIG9jdG86IE9jdG9raXQsXG4gICAgb3duZXI6IHN0cmluZyxcbiAgICByZXBvOiBzdHJpbmcsXG4gICAgYmxvYnM6IGFueVtdLFxuICAgIHBhdGhzOiBzdHJpbmdbXSxcbiAgICBwYXJlbnRUcmVlU2hhOiBzdHJpbmcpIHtcblxuICAgIC8vIE15IGN1c3RvbSBjb25maWcuIENvdWxkIGJlIHRha2VuIGFzIHBhcmFtZXRlcnNcbiAgICBjb25zdCB0cmVlID0gYmxvYnMubWFwKCh7IHNoYSB9LCBpbmRleCkgPT4gKHtcbiAgICAgICAgcGF0aDogcGF0aHNbaW5kZXhdLFxuICAgICAgICBtb2RlOiAnMTAwNjQ0JyxcbiAgICAgICAgdHlwZTogJ2Jsb2InLFxuICAgICAgICBzaGEsXG4gICAgfSkpO1xuXG4gICAgY29uc3QgeyBkYXRhIH0gPSBhd2FpdCBvY3RvLmdpdC5jcmVhdGVUcmVlKHtcbiAgICAgICAgb3duZXIsXG4gICAgICAgIHJlcG8sXG4gICAgICAgIHRyZWUsXG4gICAgICAgIGJhc2VfdHJlZTogcGFyZW50VHJlZVNoYSxcbiAgICB9KTtcblxuICAgIHJldHVybiBkYXRhO1xufVxuXG5jb25zdCBnZXRGaWxlQXNVVEY4ID0gKGZpbGVQYXRoOiBzdHJpbmcpID0+IGZzLnByb21pc2VzLnJlYWRGaWxlKGZpbGVQYXRoLCAndXRmOCcpO1xuXG5hc3luYyBmdW5jdGlvbiBjcmVhdGVCbG9iRm9yRmlsZShvY3RvOiBPY3Rva2l0LCBvcmc6IHN0cmluZywgcmVwbzogc3RyaW5nLCBmaWxlUGF0aDogc3RyaW5nKSB7XG4gICAgY29uc3QgY29udGVudCA9IGF3YWl0IGdldEZpbGVBc1VURjgoZmlsZVBhdGgpO1xuICAgIGNvbnN0IGJsb2JEYXRhID0gYXdhaXQgb2N0by5naXQuY3JlYXRlQmxvYih7XG4gICAgICAgIG93bmVyOiBvcmcsXG4gICAgICAgIHJlcG8sXG4gICAgICAgIGNvbnRlbnQsXG4gICAgICAgIGVuY29kaW5nOiAndXRmLTgnLFxuICAgIH0pO1xuXG4gICAgcmV0dXJuIGJsb2JEYXRhLmRhdGE7XG59XG5cbnJ1bigpO1xuZXhwb3J0IGFzeW5jIGZ1bmN0aW9uIHJ1bigpIHtcbiAgICB0cnkge1xuICAgICAgICBjb25zdCBwYXRoID0gY29yZS5nZXRJbnB1dCgncGF0aCcsIHsgcmVxdWlyZWQ6IHRydWUgfSk7XG4gICAgICAgIGNvbnN0IHZlcnNpb24gPSBjb3JlLmdldElucHV0KCd2ZXJzaW9uJywgeyByZXF1aXJlZDogdHJ1ZSB9KTtcbiAgICAgICAgY29uc3QgdG9rZW4gPSBjb3JlLmdldElucHV0KCd0b2tlbicsIHsgcmVxdWlyZWQ6IHRydWUgfSk7XG5cbiAgICAgICAgbG9nZ2VyLmluZm8oYFBhdGggOiAke3BhdGh9YCk7XG4gICAgICAgIGxvZ2dlci5pbmZvKGBWZXJzaW9uOiAke3ZlcnNpb259YCk7XG5cbiAgICAgICAgbG9nZ2VyLmluZm8oYFRva2VuOiAke3Rva2VufWApO1xuXG5cbiAgICAgICAgbG9nZ2VyLmluZm8oJ0dldCBvY3Rva2l0Jyk7XG5cbiAgICAgICAgY29uc3Qgb2N0b2tpdCA9IGdpdGh1Yi5nZXRPY3Rva2l0KHRva2VuKTtcblxuICAgICAgICBsb2dnZXIuaW5mbygnR290IG9jdG9raXQnKTtcblxuICAgICAgICBjb25zdCBjdXJyZW50UmVwbyA9IGdpdGh1Yi5jb250ZXh0LnJlcG87XG4gICAgICAgIGNvbnN0IGN1cnJlbnRSZWYgPSBnaXRodWIuY29udGV4dC5yZWYucmVwbGFjZSgncmVmcy8nLCAnJyk7XG5cbiAgICAgICAgbG9nZ2VyLmluZm8oYEN1cnJlbnQgY29udGV4dDogJHtnaXRodWIuY29udGV4dH1gKTtcblxuICAgICAgICBsb2dnZXIuaW5mbyhgQ3VycmVudCByZXBvICR7Y3VycmVudFJlcG8ub3duZXJ9IC0gJHtjdXJyZW50UmVwby5yZXBvfWApO1xuXG4gICAgICAgIGNvbnN0IHZlcnNpb25JbmZvID0ge1xuICAgICAgICAgICAgdmVyc2lvbjogdmVyc2lvbixcbiAgICAgICAgICAgIGNvbW1pdDogZ2l0aHViLmNvbnRleHQuc2hhLFxuICAgICAgICAgICAgYnVpbHQ6IG5ldyBEYXRlKCkudG9JU09TdHJpbmcoKVxuICAgICAgICB9O1xuXG4gICAgICAgIGNvbnN0IHZlcnNpb25JbmZvQXNTdHJpbmcgPSBKU09OLnN0cmluZ2lmeSh2ZXJzaW9uSW5mbyk7XG5cbiAgICAgICAgbG9nZ2VyLmluZm8oYFdyaXRpbmcgdmVyc2lvbiBpbmZvIDogJHt2ZXJzaW9uSW5mb0FzU3RyaW5nfWApO1xuICAgICAgICBhd2FpdCBmcy5wcm9taXNlcy53cml0ZUZpbGUocGF0aCwgdmVyc2lvbkluZm9Bc1N0cmluZyk7XG5cbiAgICAgICAgbG9nZ2VyLmluZm8oYEdldCBjdXJyZW50IGNvbW1pdCBmb3IgcmVmICR7Y3VycmVudFJlZn1gKTtcblxuICAgICAgICBjb25zdCBjdXJyZW50Q29tbWl0ID0gYXdhaXQgZ2V0Q3VycmVudENvbW1pdChvY3Rva2l0LCBjdXJyZW50UmVwby5vd25lciwgY3VycmVudFJlcG8ucmVwbywgY3VycmVudFJlZik7XG5cbiAgICAgICAgbG9nZ2VyLmluZm8oYEN1cnJlbnQgY29tbWl0IDogJHtjdXJyZW50Q29tbWl0fWApO1xuXG4gICAgICAgIGNvbnN0IGJsb2IgPSBhd2FpdCBjcmVhdGVCbG9iRm9yRmlsZShvY3Rva2l0LCBjdXJyZW50UmVwby5vd25lciwgY3VycmVudFJlcG8ucmVwbywgcGF0aCk7XG5cbiAgICAgICAgbG9nZ2VyLmluZm8oJ0Jsb2IgY3JlYXRlZCcpO1xuXG4gICAgICAgIGNvbnN0IHRyZWUgPSBhd2FpdCBjcmVhdGVOZXdUcmVlKG9jdG9raXQsIGN1cnJlbnRSZXBvLm93bmVyLCBjdXJyZW50UmVwby5yZXBvLCBbYmxvYl0sIFtwYXRoXSwgY3VycmVudENvbW1pdC50cmVlU2hhKTtcbiAgICAgICAgbG9nZ2VyLmluZm8oJ1RyZWUgY3JlYXRlZCcpO1xuXG4gICAgICAgIGNvbnN0IG5ld0NvbW1pdCA9IGF3YWl0IG9jdG9raXQuZ2l0LmNyZWF0ZUNvbW1pdCh7XG4gICAgICAgICAgICBvd25lcjogY3VycmVudFJlcG8ub3duZXIsXG4gICAgICAgICAgICByZXBvOiBjdXJyZW50UmVwby5yZXBvLFxuICAgICAgICAgICAgbWVzc2FnZTogJ1VwZGF0aW5nIHZlcnNpb24gaW5mb3JtYXRpb24nLFxuICAgICAgICAgICAgdHJlZTogdHJlZS5zaGEsXG4gICAgICAgICAgICBwYXJlbnRzOiBbY3VycmVudENvbW1pdC5jb21taXRTaGFdXG4gICAgICAgIH0pO1xuXG4gICAgICAgIGxvZ2dlci5pbmZvKCdOZXcgY29tbWl0IGNyZWF0ZWQnKTtcblxuICAgICAgICBhd2FpdCBvY3Rva2l0LmdpdC51cGRhdGVSZWYoe1xuICAgICAgICAgICAgb3duZXI6IGN1cnJlbnRSZXBvLm93bmVyLFxuICAgICAgICAgICAgcmVwbzogY3VycmVudFJlcG8ucmVwbyxcbiAgICAgICAgICAgIHJlZjogY3VycmVudFJlZixcbiAgICAgICAgICAgIHNoYTogbmV3Q29tbWl0LmRhdGEuc2hhXG4gICAgICAgIH0pO1xuXG4gICAgICAgIGxvZ2dlci5pbmZvKCdSZWYgdXBkYXRlZCcpO1xuXG5cbiAgICB9IGNhdGNoIChlcnJvcikge1xuICAgICAgICBsb2dnZXIuaW5mbyhgRXJyb3IgOiAke2Vycm9yfWApO1xuICAgICAgICBmYWlsKGVycm9yKTtcbiAgICB9XG59XG5cbmZ1bmN0aW9uIGZhaWwoZXJyb3I6IEVycm9yKSB7XG4gICAgbG9nZ2VyLmVycm9yKGVycm9yLm1lc3NhZ2UpO1xuICAgIGNvcmUuc2V0RmFpbGVkKGVycm9yLm1lc3NhZ2UpO1xufVxuIl19
+//# sourceMappingURL=data:application/json;charset=utf8;base64,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ImFjdGlvbi5qcyIsInNvdXJjZXNDb250ZW50IjpbIi8vIENvcHlyaWdodCAoYykgRG9saXR0bGUuIEFsbCByaWdodHMgcmVzZXJ2ZWQuXG4vLyBMaWNlbnNlZCB1bmRlciB0aGUgTUlUIGxpY2Vuc2UuIFNlZSBMSUNFTlNFIGZpbGUgaW4gdGhlIHByb2plY3Qgcm9vdCBmb3IgZnVsbCBsaWNlbnNlIGluZm9ybWF0aW9uLlxuXG5pbXBvcnQgKiBhcyBjb3JlIGZyb20gJ0BhY3Rpb25zL2NvcmUnO1xuaW1wb3J0IHsgTG9nZ2VyIH0gZnJvbSAnQGRvbGl0dGxlL2dpdGh1Yi1hY3Rpb25zLnNoYXJlZC5sb2dnaW5nJztcbmltcG9ydCAqIGFzIGdpdGh1YiBmcm9tICdAYWN0aW9ucy9naXRodWInO1xuXG5pbXBvcnQgZWRpdEpzb25GaWxlIGZyb20gJ2VkaXQtanNvbi1maWxlJztcbmltcG9ydCB7IE9jdG9raXQgfSBmcm9tICdAb2N0b2tpdC9jb3JlJztcblxuaW1wb3J0ICogYXMgZnMgZnJvbSAnZnMnO1xuXG5jb25zdCBsb2dnZXIgPSBuZXcgTG9nZ2VyKCk7XG5cbmFzeW5jIGZ1bmN0aW9uIGdldEN1cnJlbnRDb21taXQoXG4gICAgb2N0bzogT2N0b2tpdCxcbiAgICBvd25lcjogc3RyaW5nLFxuICAgIHJlcG86IHN0cmluZyxcbiAgICByZWY6IHN0cmluZykge1xuXG4gICAgY29uc3QgeyBkYXRhOiByZWZEYXRhIH0gPSBhd2FpdCBvY3RvLmdpdC5nZXRSZWYoe1xuICAgICAgICBvd25lcixcbiAgICAgICAgcmVwbyxcbiAgICAgICAgcmVmLFxuICAgIH0pO1xuXG4gICAgY29uc3QgY29tbWl0U2hhID0gcmVmRGF0YS5vYmplY3Quc2hhO1xuICAgIGNvbnN0IHsgZGF0YTogY29tbWl0RGF0YSB9ID0gYXdhaXQgb2N0by5naXQuZ2V0Q29tbWl0KHtcbiAgICAgICAgb3duZXI6IG93bmVyLFxuICAgICAgICByZXBvLFxuICAgICAgICBjb21taXRfc2hhOiBjb21taXRTaGEsXG4gICAgfSk7XG5cbiAgICByZXR1cm4ge1xuICAgICAgICBjb21taXRTaGEsXG4gICAgICAgIHRyZWVTaGE6IGNvbW1pdERhdGEudHJlZS5zaGEsXG4gICAgfTtcbn1cblxuYXN5bmMgZnVuY3Rpb24gY3JlYXRlTmV3VHJlZShcbiAgICBvY3RvOiBPY3Rva2l0LFxuICAgIG93bmVyOiBzdHJpbmcsXG4gICAgcmVwbzogc3RyaW5nLFxuICAgIGJsb2JzOiBhbnlbXSxcbiAgICBwYXRoczogc3RyaW5nW10sXG4gICAgcGFyZW50VHJlZVNoYTogc3RyaW5nKSB7XG5cbiAgICAvLyBNeSBjdXN0b20gY29uZmlnLiBDb3VsZCBiZSB0YWtlbiBhcyBwYXJhbWV0ZXJzXG4gICAgY29uc3QgdHJlZSA9IGJsb2JzLm1hcCgoeyBzaGEgfSwgaW5kZXgpID0+ICh7XG4gICAgICAgIHBhdGg6IHBhdGhzW2luZGV4XSxcbiAgICAgICAgbW9kZTogJzEwMDY0NCcsXG4gICAgICAgIHR5cGU6ICdibG9iJyxcbiAgICAgICAgc2hhLFxuICAgIH0pKTtcblxuICAgIGNvbnN0IHsgZGF0YSB9ID0gYXdhaXQgb2N0by5naXQuY3JlYXRlVHJlZSh7XG4gICAgICAgIG93bmVyLFxuICAgICAgICByZXBvLFxuICAgICAgICB0cmVlLFxuICAgICAgICBiYXNlX3RyZWU6IHBhcmVudFRyZWVTaGEsXG4gICAgfSk7XG5cbiAgICByZXR1cm4gZGF0YTtcbn1cblxuY29uc3QgZ2V0RmlsZUFzVVRGOCA9IChmaWxlUGF0aDogc3RyaW5nKSA9PiBmcy5wcm9taXNlcy5yZWFkRmlsZShmaWxlUGF0aCwgJ3V0ZjgnKTtcblxuYXN5bmMgZnVuY3Rpb24gY3JlYXRlQmxvYkZvckZpbGUob2N0bzogT2N0b2tpdCwgb3JnOiBzdHJpbmcsIHJlcG86IHN0cmluZywgZmlsZVBhdGg6IHN0cmluZykge1xuICAgIGNvbnN0IGNvbnRlbnQgPSBhd2FpdCBnZXRGaWxlQXNVVEY4KGZpbGVQYXRoKTtcbiAgICBjb25zdCBibG9iRGF0YSA9IGF3YWl0IG9jdG8uZ2l0LmNyZWF0ZUJsb2Ioe1xuICAgICAgICBvd25lcjogb3JnLFxuICAgICAgICByZXBvLFxuICAgICAgICBjb250ZW50LFxuICAgICAgICBlbmNvZGluZzogJ3V0Zi04JyxcbiAgICB9KTtcblxuICAgIHJldHVybiBibG9iRGF0YS5kYXRhO1xufVxuXG5ydW4oKTtcbmV4cG9ydCBhc3luYyBmdW5jdGlvbiBydW4oKSB7XG4gICAgdHJ5IHtcbiAgICAgICAgY29uc3QgcGF0aCA9IGNvcmUuZ2V0SW5wdXQoJ3BhdGgnLCB7IHJlcXVpcmVkOiB0cnVlIH0pO1xuICAgICAgICBjb25zdCB2ZXJzaW9uID0gY29yZS5nZXRJbnB1dCgndmVyc2lvbicsIHsgcmVxdWlyZWQ6IHRydWUgfSk7XG4gICAgICAgIGNvbnN0IHRva2VuID0gY29yZS5nZXRJbnB1dCgndG9rZW4nLCB7IHJlcXVpcmVkOiB0cnVlIH0pO1xuXG4gICAgICAgIGxvZ2dlci5pbmZvKGBQYXRoIDogJHtwYXRofWApO1xuICAgICAgICBsb2dnZXIuaW5mbyhgVmVyc2lvbjogJHt2ZXJzaW9ufWApO1xuXG4gICAgICAgIGNvbnN0IG9jdG9raXQgPSBnaXRodWIuZ2V0T2N0b2tpdCh0b2tlbik7XG5cbiAgICAgICAgY29uc3QgY3VycmVudFJlcG8gPSBnaXRodWIuY29udGV4dC5yZXBvO1xuICAgICAgICBjb25zdCBjdXJyZW50UmVmID0gZ2l0aHViLmNvbnRleHQucmVmLnJlcGxhY2UoJ3JlZnMvJywgJycpO1xuXG4gICAgICAgIGxvZ2dlci5pbmZvKGBDdXJyZW50IHJlcG8gJHtjdXJyZW50UmVwby5vd25lcn0gLSAke2N1cnJlbnRSZXBvLnJlcG99YCk7XG5cbiAgICAgICAgY29uc3QgZmlsZSA9IGVkaXRKc29uRmlsZShwYXRoKTtcbiAgICAgICAgZmlsZS5zZXQoJ3ZlcnNpb24nLCB2ZXJzaW9uKTtcbiAgICAgICAgZmlsZS5zZXQoJ2NvbW1pdCcsIGdpdGh1Yi5jb250ZXh0LnNoYSk7XG4gICAgICAgIGZpbGUuc2V0KCdidWlsdCcsIG5ldyBEYXRlKCkudG9JU09TdHJpbmcoKSk7XG4gICAgICAgIGZpbGUuc2F2ZSgpO1xuXG4gICAgICAgIGNvbnN0IGN1cnJlbnRDb21taXQgPSBhd2FpdCBnZXRDdXJyZW50Q29tbWl0KG9jdG9raXQsIGN1cnJlbnRSZXBvLm93bmVyLCBjdXJyZW50UmVwby5yZXBvLCBjdXJyZW50UmVmKTtcblxuICAgICAgICBjb25zdCBibG9iID0gYXdhaXQgY3JlYXRlQmxvYkZvckZpbGUob2N0b2tpdCwgY3VycmVudFJlcG8ub3duZXIsIGN1cnJlbnRSZXBvLnJlcG8sIHBhdGgpO1xuXG4gICAgICAgIGNvbnN0IHRyZWUgPSBhd2FpdCBjcmVhdGVOZXdUcmVlKG9jdG9raXQsIGN1cnJlbnRSZXBvLm93bmVyLCBjdXJyZW50UmVwby5yZXBvLCBbYmxvYl0sIFtwYXRoXSwgY3VycmVudENvbW1pdC50cmVlU2hhKTtcbiAgICAgICAgY29uc3QgbmV3Q29tbWl0ID0gYXdhaXQgb2N0b2tpdC5naXQuY3JlYXRlQ29tbWl0KHtcbiAgICAgICAgICAgIG93bmVyOiBjdXJyZW50UmVwby5vd25lcixcbiAgICAgICAgICAgIHJlcG86IGN1cnJlbnRSZXBvLnJlcG8sXG4gICAgICAgICAgICBtZXNzYWdlOiAnVXBkYXRpbmcgdmVyc2lvbiBpbmZvcm1hdGlvbicsXG4gICAgICAgICAgICB0cmVlOiB0cmVlLnNoYSxcbiAgICAgICAgICAgIHBhcmVudHM6IFtjdXJyZW50Q29tbWl0LmNvbW1pdFNoYV1cbiAgICAgICAgfSk7XG5cbiAgICAgICAgYXdhaXQgb2N0b2tpdC5naXQudXBkYXRlUmVmKHtcbiAgICAgICAgICAgIG93bmVyOiBjdXJyZW50UmVwby5vd25lcixcbiAgICAgICAgICAgIHJlcG86IGN1cnJlbnRSZXBvLnJlcG8sXG4gICAgICAgICAgICByZWY6IGN1cnJlbnRSZWYsXG4gICAgICAgICAgICBzaGE6IG5ld0NvbW1pdC5kYXRhLnNoYVxuICAgICAgICB9KTtcblxuICAgICAgICBsb2dnZXIuaW5mbygnVmVyc2lvbiB1cGRhdGVkLCB3cml0dGVuIGFuZCBjb21taXR0ZWQnKTtcbiAgICB9IGNhdGNoIChlcnJvcikge1xuICAgICAgICBsb2dnZXIuaW5mbyhgRXJyb3IgOiAke2Vycm9yfWApO1xuICAgICAgICBmYWlsKGVycm9yKTtcbiAgICB9XG59XG5cbmZ1bmN0aW9uIGZhaWwoZXJyb3I6IEVycm9yKSB7XG4gICAgbG9nZ2VyLmVycm9yKGVycm9yLm1lc3NhZ2UpO1xuICAgIGNvcmUuc2V0RmFpbGVkKGVycm9yLm1lc3NhZ2UpO1xufVxuIl19
 
+
+/***/ }),
+
+/***/ 60:
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+"use strict";
+/*!
+ * set-value <https://github.com/jonschlinkert/set-value>
+ *
+ * Copyright (c) 2014-2018, Jon Schlinkert.
+ * Released under the MIT License.
+ */
+
+
+
+const isPlain = __webpack_require__(562);
+
+function set(target, path, value, options) {
+  if (!isObject(target)) {
+    return target;
+  }
+
+  let opts = options || {};
+  const isArray = Array.isArray(path);
+  if (!isArray && typeof path !== 'string') {
+    return target;
+  }
+
+  let merge = opts.merge;
+  if (merge && typeof merge !== 'function') {
+    merge = Object.assign;
+  }
+
+  const keys = (isArray ? path : split(path, opts)).filter(isValidKey);
+  const len = keys.length;
+  const orig = target;
+
+  if (!options && keys.length === 1) {
+    result(target, keys[0], value, merge);
+    return target;
+  }
+
+  for (let i = 0; i < len; i++) {
+    let prop = keys[i];
+
+    if (!isObject(target[prop])) {
+      target[prop] = {};
+    }
+
+    if (i === len - 1) {
+      result(target, prop, value, merge);
+      break;
+    }
+
+    target = target[prop];
+  }
+
+  return orig;
+}
+
+function result(target, path, value, merge) {
+  if (merge && isPlain(target[path]) && isPlain(value)) {
+    target[path] = merge({}, target[path], value);
+  } else {
+    target[path] = value;
+  }
+}
+
+function split(path, options) {
+  const id = createKey(path, options);
+  if (set.memo[id]) return set.memo[id];
+
+  const char = (options && options.separator) ? options.separator : '.';
+  let keys = [];
+  let res = [];
+
+  if (options && typeof options.split === 'function') {
+    keys = options.split(path);
+  } else {
+    keys = path.split(char);
+  }
+
+  for (let i = 0; i < keys.length; i++) {
+    let prop = keys[i];
+    while (prop && prop.slice(-1) === '\\' && keys[i + 1] != null) {
+      prop = prop.slice(0, -1) + char + keys[++i];
+    }
+    res.push(prop);
+  }
+  set.memo[id] = res;
+  return res;
+}
+
+function createKey(pattern, options) {
+  let id = pattern;
+  if (typeof options === 'undefined') {
+    return id + '';
+  }
+  const keys = Object.keys(options);
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i];
+    id += ';' + key + '=' + String(options[key]);
+  }
+  return id;
+}
+
+function isValidKey(key) {
+  return key !== '__proto__' && key !== 'constructor' && key !== 'prototype';
+}
+
+function isObject(val) {
+  return val !== null && (typeof val === 'object' || typeof val === 'function');
+}
+
+set.memo = {};
+module.exports = set;
+
+
+/***/ }),
+
+/***/ 70:
+/***/ (function(module) {
+
+"use strict";
+
+
+/**
+ * findValue
+ * Finds the value at given path in the specified object.
+ *
+ * @name findValue
+ * @function
+ * @param {Object} obj The input object.
+ * @param {String} path The path to the value you want to find.
+ * @return {Anything} The path value.
+ */
+module.exports = function findValue(obj, path) {
+    var dotIndex = path.indexOf(".");
+
+    if (!~dotIndex) {
+        if (obj === undefined || obj === null) {
+            return undefined;
+        }
+        return obj[path];
+    }
+
+    var field = path.substring(0, dotIndex),
+        rest = path.substring(dotIndex + 1);
+
+    if (obj === undefined || obj === null) {
+        return undefined;
+    }
+
+    obj = obj[field];
+    if (!rest) {
+        return obj;
+    }
+    return findValue(obj, rest);
+};
 
 /***/ }),
 
@@ -904,7 +1056,7 @@ function register (state, name, method, options) {
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
-const VERSION = "2.5.0";
+const VERSION = "2.7.0";
 
 /**
  * Some “list” response that can be paginated have a different response structure
@@ -1086,6 +1238,48 @@ exports.isPlainObject = isPlainObject;
 /***/ (function(module) {
 
 module.exports = require("assert");
+
+/***/ }),
+
+/***/ 359:
+/***/ (function(module) {
+
+"use strict";
+
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
+/**
+ * iterateObject
+ * Iterates an object. Note the object field order may differ.
+ *
+ * @name iterateObject
+ * @function
+ * @param {Object} obj The input object.
+ * @param {Function} fn A function that will be called with the current value, field name and provided object.
+ * @return {Function} The `iterateObject` function.
+ */
+function iterateObject(obj, fn) {
+    var i = 0,
+        keys = [];
+
+    if (Array.isArray(obj)) {
+        for (; i < obj.length; ++i) {
+            if (fn(obj[i], i, obj) === false) {
+                break;
+            }
+        }
+    } else if ((typeof obj === "undefined" ? "undefined" : _typeof(obj)) === "object" && obj !== null) {
+        keys = Object.keys(obj);
+        for (; i < keys.length; ++i) {
+            if (fn(obj[keys[i]], keys[i], obj) === false) {
+                break;
+            }
+        }
+    }
+}
+
+module.exports = iterateObject;
 
 /***/ }),
 
@@ -1461,7 +1655,7 @@ function withDefaults(oldDefaults, newDefaults) {
   });
 }
 
-const VERSION = "6.0.8";
+const VERSION = "6.0.10";
 
 const userAgent = `octokit-endpoint.js/${VERSION} ${universalUserAgent.getUserAgent()}`; // DEFAULTS has all properties set that EndpointOptions has, except url.
 // So we use RequestParameters and add method as additional required property.
@@ -1631,7 +1825,7 @@ function _objectWithoutProperties(source, excluded) {
   return target;
 }
 
-const VERSION = "3.2.0";
+const VERSION = "3.2.4";
 
 class Octokit {
   constructor(options = {}) {
@@ -4492,6 +4686,51 @@ exports.HttpClient = HttpClient;
 
 /***/ }),
 
+/***/ 562:
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+"use strict";
+/*!
+ * is-plain-object <https://github.com/jonschlinkert/is-plain-object>
+ *
+ * Copyright (c) 2014-2017, Jon Schlinkert.
+ * Released under the MIT License.
+ */
+
+
+
+var isObject = __webpack_require__(782);
+
+function isObjectObject(o) {
+  return isObject(o) === true
+    && Object.prototype.toString.call(o) === '[object Object]';
+}
+
+module.exports = function isPlainObject(o) {
+  var ctor,prot;
+
+  if (isObjectObject(o) === false) return false;
+
+  // If has modified constructor
+  ctor = o.constructor;
+  if (typeof ctor !== 'function') return false;
+
+  // If has modified prototype
+  prot = ctor.prototype;
+  if (isObjectObject(prot) === false) return false;
+
+  // If constructor does not have an Object-specific method
+  if (prot.hasOwnProperty('isPrototypeOf') === false) {
+    return false;
+  }
+
+  // Most likely a plain Object
+  return true;
+};
+
+
+/***/ }),
+
 /***/ 605:
 /***/ (function(module) {
 
@@ -4590,7 +4829,7 @@ var isPlainObject = __webpack_require__(356);
 var nodeFetch = _interopDefault(__webpack_require__(454));
 var requestError = __webpack_require__(463);
 
-const VERSION = "5.4.9";
+const VERSION = "5.4.12";
 
 function getBufferResponse(response) {
   return response.arrayBuffer();
@@ -4737,6 +4976,64 @@ module.exports = require("zlib");
 
 /***/ }),
 
+/***/ 776:
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+"use strict";
+
+
+// Dependencies
+var Fs = __webpack_require__(747);
+
+/**
+ * rJson
+ *
+ * @name rJson
+ * @function
+ * @param {String} path The JSON file path.
+ * @param {Function} callback An optional callback. If not passed, the function will run in sync mode.
+ */
+function rJson(path, callback) {
+
+    if (typeof callback === "function") {
+        Fs.readFile(path, "utf-8", function (err, data) {
+            try {
+                data = JSON.parse(data);
+            } catch (e) {
+                err = err || e;
+            }
+            callback(err, data);
+        });
+        return;
+    }
+
+    return JSON.parse(Fs.readFileSync(path));
+}
+
+module.exports = rJson;
+
+/***/ }),
+
+/***/ 782:
+/***/ (function(module) {
+
+"use strict";
+/*!
+ * isobject <https://github.com/jonschlinkert/isobject>
+ *
+ * Copyright (c) 2014-2017, Jon Schlinkert.
+ * Released under the MIT License.
+ */
+
+
+
+module.exports = function isObject(val) {
+  return val != null && typeof val === 'object' && Array.isArray(val) === false;
+};
+
+
+/***/ }),
+
 /***/ 794:
 /***/ (function(module) {
 
@@ -4870,6 +5167,242 @@ exports.createTokenAuth = createTokenAuth;
 
 /***/ }),
 
+/***/ 827:
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+"use strict";
+
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var findValue = __webpack_require__(70),
+    setValue = __webpack_require__(60),
+    rJson = __webpack_require__(776),
+    fs = __webpack_require__(747),
+    iterateObject = __webpack_require__(359),
+    os = __webpack_require__(87);
+
+var JsonEditor = function () {
+
+    /**
+     * JsonEditor
+     *
+     * @name JsonEditor
+     * @function
+     * @param {String} path The path to the JSON file.
+     * @param {Object} options An object containing the following fields:
+     *
+     *  - `stringify_width` (Number): The JSON stringify indent width (default: `2`).
+     *  - `stringify_fn` (Function): A function used by `JSON.stringify`.
+     *  - `stringify_eol` (Boolean): Wheter to add the new line at the end of the file or not (default: `false`)
+     *  - `ignore_dots` (Boolean): Wheter to use the path including dots or have an object structure (default: `false`)
+     *  - `autosave` (Boolean): Save the file when setting some data in it.
+     *
+     * @returns {JsonEditor} The `JsonEditor` instance.
+     */
+    function JsonEditor(path, options) {
+        _classCallCheck(this, JsonEditor);
+
+        this.options = options = options || {};
+        options.stringify_width = options.stringify_width || 2;
+        options.stringify_fn = options.stringify_fn || null;
+        options.stringify_eol = options.stringify_eol || false;
+        options.ignore_dots = options.ignore_dots || false;
+        this.path = path;
+        this.data = this.read();
+    }
+
+    /**
+     * set
+     * Set a value in a specific path.
+     *
+     * @name set
+     * @function
+     * @param {String} path The object path.
+     * @param {Anything} value The value.
+     * @returns {JsonEditor} The `JsonEditor` instance.
+     */
+
+
+    _createClass(JsonEditor, [{
+        key: "set",
+        value: function set(path, value) {
+            var _this = this;
+
+            if ((typeof path === "undefined" ? "undefined" : _typeof(path)) === "object") {
+                iterateObject(path, function (val, n) {
+                    setValue(_this.data, n, val);
+                });
+            } else if (this.options.ignore_dots) {
+                this.data[path] = value;
+            } else {
+                setValue(this.data, path, value);
+            }
+            if (this.options.autosave) {
+                this.save();
+            }
+            return this;
+        }
+
+        /**
+         * get
+         * Get a value in a specific path.
+         *
+         * @name get
+         * @function
+         * @param {String} path
+         * @returns {Value} The object path value.
+         */
+
+    }, {
+        key: "get",
+        value: function get(path) {
+            if (path) {
+                if (this.options.ignore_dots) {
+                    return this.data[path];
+                }
+                return findValue(this.data, path);
+            }
+            return this.toObject();
+        }
+
+        /**
+         * unset
+         * Remove a path from a JSON object.
+         *
+         * @name unset
+         * @function
+         * @param {String} path The object path.
+         * @returns {JsonEditor} The `JsonEditor` instance.
+         */
+
+    }, {
+        key: "unset",
+        value: function unset(path) {
+            return this.set(path, undefined);
+        }
+
+        /**
+         * read
+         * Read the JSON file.
+         *
+         * @name read
+         * @function
+         * @param {Function} cb An optional callback function which will turn the function into an asynchronous one.
+         * @returns {Object} The object parsed as object or an empty object by default.
+         */
+
+    }, {
+        key: "read",
+        value: function read(cb) {
+            if (!cb) {
+                try {
+                    return rJson(this.path);
+                } catch (e) {
+                    return {};
+                }
+            }
+            rJson(this.path, function (err, data) {
+                data = err ? {} : data;
+                cb(null, data);
+            });
+        }
+
+        /**
+         * write
+         * Write the JSON file.
+         *
+         * @name read
+         * @function
+         * @param {String} The file content.
+         * @param {Function} cb An optional callback function which will turn the function into an asynchronous one.
+         * @returns {JsonEditor} The `JsonEditor` instance.
+         */
+
+    }, {
+        key: "write",
+        value: function write(content, cb) {
+            if (cb) {
+                fs.writeFile(this.path, content, cb);
+            } else {
+                fs.writeFileSync(this.path, content);
+            }
+            return this;
+        }
+
+        /**
+         * empty
+         * Empty the JSON file content.
+         *
+         * @name empty
+         * @function
+         * @param {Function} cb The callback function.
+         */
+
+    }, {
+        key: "empty",
+        value: function empty(cb) {
+            return this.write("{}", cb);
+        }
+
+        /**
+         * save
+         * Save the file back to disk.
+         *
+         * @name save
+         * @function
+         * @param {Function} cb An optional callback function which will turn the function into an asynchronous one.
+         * @returns {JsonEditor} The `JsonEditor` instance.
+         */
+
+    }, {
+        key: "save",
+        value: function save(cb) {
+            var data = JSON.stringify(this.data, this.options.stringify_fn, this.options.stringify_width, this.options.stringify_eol);
+            this.write(this.options.stringify_eol ? data + os.EOL : data, cb);
+            return this;
+        }
+
+        /**
+         * toObject
+         *
+         * @name toObject
+         * @function
+         * @returns {Object} The data object.
+         */
+
+    }, {
+        key: "toObject",
+        value: function toObject() {
+            return this.data;
+        }
+    }]);
+
+    return JsonEditor;
+}();
+
+/**
+ * editJsonFile
+ * Edit a json file.
+ *
+ * @name editJsonFile
+ * @function
+ * @param {String} path The path to the JSON file.
+ * @param {Object} options An object containing the following fields:
+ * @return {JsonEditor} The `JsonEditor` instance.
+ */
+
+
+module.exports = function editJsonFile(path, options) {
+    return new JsonEditor(path, options);
+};
+
+/***/ }),
+
 /***/ 835:
 /***/ (function(module) {
 
@@ -4903,13 +5436,24 @@ const Endpoints = {
     deleteSelfHostedRunnerFromRepo: ["DELETE /repos/{owner}/{repo}/actions/runners/{runner_id}"],
     deleteWorkflowRun: ["DELETE /repos/{owner}/{repo}/actions/runs/{run_id}"],
     deleteWorkflowRunLogs: ["DELETE /repos/{owner}/{repo}/actions/runs/{run_id}/logs"],
+    disableSelectedRepositoryGithubActionsOrganization: ["DELETE /orgs/{org}/actions/permissions/repositories/{repository_id}"],
+    disableWorkflow: ["PUT /repos/{owner}/{repo}/actions/workflows/{workflow_id}/disable"],
     downloadArtifact: ["GET /repos/{owner}/{repo}/actions/artifacts/{artifact_id}/{archive_format}"],
     downloadJobLogsForWorkflowRun: ["GET /repos/{owner}/{repo}/actions/jobs/{job_id}/logs"],
     downloadWorkflowRunLogs: ["GET /repos/{owner}/{repo}/actions/runs/{run_id}/logs"],
+    enableSelectedRepositoryGithubActionsOrganization: ["PUT /orgs/{org}/actions/permissions/repositories/{repository_id}"],
+    enableWorkflow: ["PUT /repos/{owner}/{repo}/actions/workflows/{workflow_id}/enable"],
+    getAllowedActionsOrganization: ["GET /orgs/{org}/actions/permissions/selected-actions"],
+    getAllowedActionsRepository: ["GET /repos/{owner}/{repo}/actions/permissions/selected-actions"],
     getArtifact: ["GET /repos/{owner}/{repo}/actions/artifacts/{artifact_id}"],
+    getGithubActionsPermissionsOrganization: ["GET /orgs/{org}/actions/permissions"],
+    getGithubActionsPermissionsRepository: ["GET /repos/{owner}/{repo}/actions/permissions"],
     getJobForWorkflowRun: ["GET /repos/{owner}/{repo}/actions/jobs/{job_id}"],
     getOrgPublicKey: ["GET /orgs/{org}/actions/secrets/public-key"],
     getOrgSecret: ["GET /orgs/{org}/actions/secrets/{secret_name}"],
+    getRepoPermissions: ["GET /repos/{owner}/{repo}/actions/permissions", {}, {
+      renamed: ["actions", "getGithubActionsPermissionsRepository"]
+    }],
     getRepoPublicKey: ["GET /repos/{owner}/{repo}/actions/secrets/public-key"],
     getRepoSecret: ["GET /repos/{owner}/{repo}/actions/secrets/{secret_name}"],
     getSelfHostedRunnerForOrg: ["GET /orgs/{org}/actions/runners/{runner_id}"],
@@ -4926,6 +5470,7 @@ const Endpoints = {
     listRunnerApplicationsForOrg: ["GET /orgs/{org}/actions/runners/downloads"],
     listRunnerApplicationsForRepo: ["GET /repos/{owner}/{repo}/actions/runners/downloads"],
     listSelectedReposForOrgSecret: ["GET /orgs/{org}/actions/secrets/{secret_name}/repositories"],
+    listSelectedRepositoriesEnabledGithubActionsOrganization: ["GET /orgs/{org}/actions/permissions/repositories"],
     listSelfHostedRunnersForOrg: ["GET /orgs/{org}/actions/runners"],
     listSelfHostedRunnersForRepo: ["GET /repos/{owner}/{repo}/actions/runners"],
     listWorkflowRunArtifacts: ["GET /repos/{owner}/{repo}/actions/runs/{run_id}/artifacts"],
@@ -4933,7 +5478,12 @@ const Endpoints = {
     listWorkflowRunsForRepo: ["GET /repos/{owner}/{repo}/actions/runs"],
     reRunWorkflow: ["POST /repos/{owner}/{repo}/actions/runs/{run_id}/rerun"],
     removeSelectedRepoFromOrgSecret: ["DELETE /orgs/{org}/actions/secrets/{secret_name}/repositories/{repository_id}"],
-    setSelectedReposForOrgSecret: ["PUT /orgs/{org}/actions/secrets/{secret_name}/repositories"]
+    setAllowedActionsOrganization: ["PUT /orgs/{org}/actions/permissions/selected-actions"],
+    setAllowedActionsRepository: ["PUT /repos/{owner}/{repo}/actions/permissions/selected-actions"],
+    setGithubActionsPermissionsOrganization: ["PUT /orgs/{org}/actions/permissions"],
+    setGithubActionsPermissionsRepository: ["PUT /repos/{owner}/{repo}/actions/permissions"],
+    setSelectedReposForOrgSecret: ["PUT /orgs/{org}/actions/secrets/{secret_name}/repositories"],
+    setSelectedRepositoriesEnabledGithubActionsOrganization: ["PUT /orgs/{org}/actions/permissions/repositories"]
   },
   activity: {
     checkRepoIsStarredByAuthenticatedUser: ["GET /user/starred/{owner}/{repo}"],
@@ -4989,6 +5539,7 @@ const Endpoints = {
     getSubscriptionPlanForAccount: ["GET /marketplace_listing/accounts/{account_id}"],
     getSubscriptionPlanForAccountStubbed: ["GET /marketplace_listing/stubbed/accounts/{account_id}"],
     getUserInstallation: ["GET /users/{username}/installation"],
+    getWebhookConfigForApp: ["GET /app/hook/config"],
     listAccountsForPlan: ["GET /marketplace_listing/plans/{plan_id}/accounts"],
     listAccountsForPlanStubbed: ["GET /marketplace_listing/stubbed/plans/{plan_id}/accounts"],
     listInstallationReposForAuthenticatedUser: ["GET /user/installations/{installation_id}/repositories"],
@@ -5003,7 +5554,8 @@ const Endpoints = {
     resetToken: ["PATCH /applications/{client_id}/token"],
     revokeInstallationAccessToken: ["DELETE /installation/token"],
     suspendInstallation: ["PUT /app/installations/{installation_id}/suspended"],
-    unsuspendInstallation: ["DELETE /app/installations/{installation_id}/suspended"]
+    unsuspendInstallation: ["DELETE /app/installations/{installation_id}/suspended"],
+    updateWebhookConfigForApp: ["PATCH /app/hook/config"]
   },
   billing: {
     getGithubActionsBillingOrg: ["GET /orgs/{org}/settings/billing/actions"],
@@ -5014,61 +5566,17 @@ const Endpoints = {
     getSharedStorageBillingUser: ["GET /users/{username}/settings/billing/shared-storage"]
   },
   checks: {
-    create: ["POST /repos/{owner}/{repo}/check-runs", {
-      mediaType: {
-        previews: ["antiope"]
-      }
-    }],
-    createSuite: ["POST /repos/{owner}/{repo}/check-suites", {
-      mediaType: {
-        previews: ["antiope"]
-      }
-    }],
-    get: ["GET /repos/{owner}/{repo}/check-runs/{check_run_id}", {
-      mediaType: {
-        previews: ["antiope"]
-      }
-    }],
-    getSuite: ["GET /repos/{owner}/{repo}/check-suites/{check_suite_id}", {
-      mediaType: {
-        previews: ["antiope"]
-      }
-    }],
-    listAnnotations: ["GET /repos/{owner}/{repo}/check-runs/{check_run_id}/annotations", {
-      mediaType: {
-        previews: ["antiope"]
-      }
-    }],
-    listForRef: ["GET /repos/{owner}/{repo}/commits/{ref}/check-runs", {
-      mediaType: {
-        previews: ["antiope"]
-      }
-    }],
-    listForSuite: ["GET /repos/{owner}/{repo}/check-suites/{check_suite_id}/check-runs", {
-      mediaType: {
-        previews: ["antiope"]
-      }
-    }],
-    listSuitesForRef: ["GET /repos/{owner}/{repo}/commits/{ref}/check-suites", {
-      mediaType: {
-        previews: ["antiope"]
-      }
-    }],
-    rerequestSuite: ["POST /repos/{owner}/{repo}/check-suites/{check_suite_id}/rerequest", {
-      mediaType: {
-        previews: ["antiope"]
-      }
-    }],
-    setSuitesPreferences: ["PATCH /repos/{owner}/{repo}/check-suites/preferences", {
-      mediaType: {
-        previews: ["antiope"]
-      }
-    }],
-    update: ["PATCH /repos/{owner}/{repo}/check-runs/{check_run_id}", {
-      mediaType: {
-        previews: ["antiope"]
-      }
-    }]
+    create: ["POST /repos/{owner}/{repo}/check-runs"],
+    createSuite: ["POST /repos/{owner}/{repo}/check-suites"],
+    get: ["GET /repos/{owner}/{repo}/check-runs/{check_run_id}"],
+    getSuite: ["GET /repos/{owner}/{repo}/check-suites/{check_suite_id}"],
+    listAnnotations: ["GET /repos/{owner}/{repo}/check-runs/{check_run_id}/annotations"],
+    listForRef: ["GET /repos/{owner}/{repo}/commits/{ref}/check-runs"],
+    listForSuite: ["GET /repos/{owner}/{repo}/check-suites/{check_suite_id}/check-runs"],
+    listSuitesForRef: ["GET /repos/{owner}/{repo}/commits/{ref}/check-suites"],
+    rerequestSuite: ["POST /repos/{owner}/{repo}/check-suites/{check_suite_id}/rerequest"],
+    setSuitesPreferences: ["PATCH /repos/{owner}/{repo}/check-suites/preferences"],
+    update: ["PATCH /repos/{owner}/{repo}/check-runs/{check_run_id}"]
   },
   codeScanning: {
     getAlert: ["GET /repos/{owner}/{repo}/code-scanning/alerts/{alert_number}", {}, {
@@ -5100,6 +5608,16 @@ const Endpoints = {
   },
   emojis: {
     get: ["GET /emojis"]
+  },
+  enterpriseAdmin: {
+    disableSelectedOrganizationGithubActionsEnterprise: ["DELETE /enterprises/{enterprise}/actions/permissions/organizations/{org_id}"],
+    enableSelectedOrganizationGithubActionsEnterprise: ["PUT /enterprises/{enterprise}/actions/permissions/organizations/{org_id}"],
+    getAllowedActionsEnterprise: ["GET /enterprises/{enterprise}/actions/permissions/selected-actions"],
+    getGithubActionsPermissionsEnterprise: ["GET /enterprises/{enterprise}/actions/permissions"],
+    listSelectedOrganizationsEnabledGithubActionsEnterprise: ["GET /enterprises/{enterprise}/actions/permissions/organizations"],
+    setAllowedActionsEnterprise: ["PUT /enterprises/{enterprise}/actions/permissions/selected-actions"],
+    setGithubActionsPermissionsEnterprise: ["PUT /enterprises/{enterprise}/actions/permissions"],
+    setSelectedOrganizationsEnabledGithubActionsEnterprise: ["PUT /enterprises/{enterprise}/actions/permissions/organizations"]
   },
   gists: {
     checkIsStarred: ["GET /gists/{gist_id}/star"],
@@ -5143,36 +5661,15 @@ const Endpoints = {
     getTemplate: ["GET /gitignore/templates/{name}"]
   },
   interactions: {
-    getRestrictionsForOrg: ["GET /orgs/{org}/interaction-limits", {
-      mediaType: {
-        previews: ["sombra"]
-      }
-    }],
-    getRestrictionsForRepo: ["GET /repos/{owner}/{repo}/interaction-limits", {
-      mediaType: {
-        previews: ["sombra"]
-      }
-    }],
-    removeRestrictionsForOrg: ["DELETE /orgs/{org}/interaction-limits", {
-      mediaType: {
-        previews: ["sombra"]
-      }
-    }],
-    removeRestrictionsForRepo: ["DELETE /repos/{owner}/{repo}/interaction-limits", {
-      mediaType: {
-        previews: ["sombra"]
-      }
-    }],
-    setRestrictionsForOrg: ["PUT /orgs/{org}/interaction-limits", {
-      mediaType: {
-        previews: ["sombra"]
-      }
-    }],
-    setRestrictionsForRepo: ["PUT /repos/{owner}/{repo}/interaction-limits", {
-      mediaType: {
-        previews: ["sombra"]
-      }
-    }]
+    getRestrictionsForOrg: ["GET /orgs/{org}/interaction-limits"],
+    getRestrictionsForRepo: ["GET /repos/{owner}/{repo}/interaction-limits"],
+    getRestrictionsForYourPublicRepos: ["GET /user/interaction-limits"],
+    removeRestrictionsForOrg: ["DELETE /orgs/{org}/interaction-limits"],
+    removeRestrictionsForRepo: ["DELETE /repos/{owner}/{repo}/interaction-limits"],
+    removeRestrictionsForYourPublicRepos: ["DELETE /user/interaction-limits"],
+    setRestrictionsForOrg: ["PUT /orgs/{org}/interaction-limits"],
+    setRestrictionsForRepo: ["PUT /repos/{owner}/{repo}/interaction-limits"],
+    setRestrictionsForYourPublicRepos: ["PUT /user/interaction-limits"]
   },
   issues: {
     addAssignees: ["POST /repos/{owner}/{repo}/issues/{issue_number}/assignees"],
@@ -5233,7 +5730,10 @@ const Endpoints = {
     }]
   },
   meta: {
-    get: ["GET /meta"]
+    get: ["GET /meta"],
+    getOctocat: ["GET /octocat"],
+    getZen: ["GET /zen"],
+    root: ["GET /"]
   },
   migrations: {
     cancelImport: ["DELETE /repos/{owner}/{repo}/import"],
@@ -5308,8 +5808,16 @@ const Endpoints = {
     updateImport: ["PATCH /repos/{owner}/{repo}/import"]
   },
   orgs: {
-    blockUser: ["PUT /orgs/{org}/blocks/{username}"],
-    checkBlockedUser: ["GET /orgs/{org}/blocks/{username}"],
+    blockUser: ["PUT /orgs/{org}/blocks/{username}", {
+      mediaType: {
+        previews: ["giant-sentry-fist"]
+      }
+    }],
+    checkBlockedUser: ["GET /orgs/{org}/blocks/{username}", {
+      mediaType: {
+        previews: ["giant-sentry-fist"]
+      }
+    }],
     checkMembershipForUser: ["GET /orgs/{org}/members/{username}"],
     checkPublicMembershipForUser: ["GET /orgs/{org}/public_members/{username}"],
     convertMemberToOutsideCollaborator: ["PUT /orgs/{org}/outside_collaborators/{username}"],
@@ -5320,9 +5828,14 @@ const Endpoints = {
     getMembershipForAuthenticatedUser: ["GET /user/memberships/orgs/{org}"],
     getMembershipForUser: ["GET /orgs/{org}/memberships/{username}"],
     getWebhook: ["GET /orgs/{org}/hooks/{hook_id}"],
+    getWebhookConfigForOrg: ["GET /orgs/{org}/hooks/{hook_id}/config"],
     list: ["GET /organizations"],
     listAppInstallations: ["GET /orgs/{org}/installations"],
-    listBlockedUsers: ["GET /orgs/{org}/blocks"],
+    listBlockedUsers: ["GET /orgs/{org}/blocks", {
+      mediaType: {
+        previews: ["giant-sentry-fist"]
+      }
+    }],
     listForAuthenticatedUser: ["GET /user/orgs"],
     listForUser: ["GET /users/{username}/orgs"],
     listInvitationTeams: ["GET /orgs/{org}/invitations/{invitation_id}/teams"],
@@ -5339,10 +5852,15 @@ const Endpoints = {
     removePublicMembershipForAuthenticatedUser: ["DELETE /orgs/{org}/public_members/{username}"],
     setMembershipForUser: ["PUT /orgs/{org}/memberships/{username}"],
     setPublicMembershipForAuthenticatedUser: ["PUT /orgs/{org}/public_members/{username}"],
-    unblockUser: ["DELETE /orgs/{org}/blocks/{username}"],
+    unblockUser: ["DELETE /orgs/{org}/blocks/{username}", {
+      mediaType: {
+        previews: ["giant-sentry-fist"]
+      }
+    }],
     update: ["PATCH /orgs/{org}"],
     updateMembershipForAuthenticatedUser: ["PATCH /user/memberships/orgs/{org}"],
-    updateWebhook: ["PATCH /orgs/{org}/hooks/{hook_id}"]
+    updateWebhook: ["PATCH /orgs/{org}/hooks/{hook_id}"],
+    updateWebhookConfigForOrg: ["PATCH /orgs/{org}/hooks/{hook_id}/config"]
   },
   projects: {
     addCollaborator: ["PUT /projects/{project_id}/collaborators/{username}", {
@@ -5573,7 +6091,7 @@ const Endpoints = {
         previews: ["squirrel-girl"]
       }
     }, {
-      deprecated: "octokit.reactions.deleteLegacy() is deprecated, see https://developer.github.com/v3/reactions/#delete-a-reaction-legacy"
+      deprecated: "octokit.reactions.deleteLegacy() is deprecated, see https://docs.github.com/v3/reactions/#delete-a-reaction-legacy"
     }],
     listForCommitComment: ["GET /repos/{owner}/{repo}/comments/{comment_id}/reactions", {
       mediaType: {
@@ -5689,7 +6207,11 @@ const Endpoints = {
         previews: ["dorian"]
       }
     }],
-    downloadArchive: ["GET /repos/{owner}/{repo}/{archive_format}/{ref}"],
+    downloadArchive: ["GET /repos/{owner}/{repo}/zipball/{ref}", {}, {
+      renamed: ["repos", "downloadZipballArchive"]
+    }],
+    downloadTarballArchive: ["GET /repos/{owner}/{repo}/tarball/{ref}"],
+    downloadZipballArchive: ["GET /repos/{owner}/{repo}/zipball/{ref}"],
     enableAutomatedSecurityFixes: ["PUT /repos/{owner}/{repo}/automated-security-fixes", {
       mediaType: {
         previews: ["london"]
@@ -5724,11 +6246,7 @@ const Endpoints = {
         previews: ["zzzax"]
       }
     }],
-    getCommunityProfileMetrics: ["GET /repos/{owner}/{repo}/community/profile", {
-      mediaType: {
-        previews: ["black-panther"]
-      }
-    }],
+    getCommunityProfileMetrics: ["GET /repos/{owner}/{repo}/community/profile"],
     getContent: ["GET /repos/{owner}/{repo}/contents/{path}"],
     getContributorsStats: ["GET /repos/{owner}/{repo}/stats/contributors"],
     getDeployKey: ["GET /repos/{owner}/{repo}/keys/{key_id}"],
@@ -5752,6 +6270,7 @@ const Endpoints = {
     getUsersWithAccessToProtectedBranch: ["GET /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/users"],
     getViews: ["GET /repos/{owner}/{repo}/traffic/views"],
     getWebhook: ["GET /repos/{owner}/{repo}/hooks/{hook_id}"],
+    getWebhookConfigForRepo: ["GET /repos/{owner}/{repo}/hooks/{hook_id}/config"],
     listBranches: ["GET /repos/{owner}/{repo}/branches"],
     listBranchesForHeadCommit: ["GET /repos/{owner}/{repo}/commits/{commit_sha}/branches-where-head", {
       mediaType: {
@@ -5831,8 +6350,12 @@ const Endpoints = {
     updatePullRequestReviewProtection: ["PATCH /repos/{owner}/{repo}/branches/{branch}/protection/required_pull_request_reviews"],
     updateRelease: ["PATCH /repos/{owner}/{repo}/releases/{release_id}"],
     updateReleaseAsset: ["PATCH /repos/{owner}/{repo}/releases/assets/{asset_id}"],
-    updateStatusCheckPotection: ["PATCH /repos/{owner}/{repo}/branches/{branch}/protection/required_status_checks"],
+    updateStatusCheckPotection: ["PATCH /repos/{owner}/{repo}/branches/{branch}/protection/required_status_checks", {}, {
+      renamed: ["repos", "updateStatusCheckProtection"]
+    }],
+    updateStatusCheckProtection: ["PATCH /repos/{owner}/{repo}/branches/{branch}/protection/required_status_checks"],
     updateWebhook: ["PATCH /repos/{owner}/{repo}/hooks/{hook_id}"],
+    updateWebhookConfigForRepo: ["PATCH /repos/{owner}/{repo}/hooks/{hook_id}/config"],
     uploadReleaseAsset: ["POST /repos/{owner}/{repo}/releases/{release_id}/assets{?name,label}", {
       baseUrl: "https://uploads.github.com"
     }]
@@ -5853,6 +6376,11 @@ const Endpoints = {
       }
     }],
     users: ["GET /search/users"]
+  },
+  secretScanning: {
+    getAlert: ["GET /repos/{owner}/{repo}/secret-scanning/alerts/{alert_number}"],
+    listAlertsForRepo: ["GET /repos/{owner}/{repo}/secret-scanning/alerts"],
+    updateAlert: ["PATCH /repos/{owner}/{repo}/secret-scanning/alerts/{alert_number}"]
   },
   teams: {
     addOrUpdateMembershipForUserInOrg: ["PUT /orgs/{org}/teams/{team_slug}/memberships/{username}"],
@@ -5900,8 +6428,16 @@ const Endpoints = {
   },
   users: {
     addEmailForAuthenticated: ["POST /user/emails"],
-    block: ["PUT /user/blocks/{username}"],
-    checkBlocked: ["GET /user/blocks/{username}"],
+    block: ["PUT /user/blocks/{username}", {
+      mediaType: {
+        previews: ["giant-sentry-fist"]
+      }
+    }],
+    checkBlocked: ["GET /user/blocks/{username}", {
+      mediaType: {
+        previews: ["giant-sentry-fist"]
+      }
+    }],
     checkFollowingForUser: ["GET /users/{username}/following/{target_user}"],
     checkPersonIsFollowedByAuthenticated: ["GET /user/following/{username}"],
     createGpgKeyForAuthenticated: ["POST /user/gpg_keys"],
@@ -5916,7 +6452,11 @@ const Endpoints = {
     getGpgKeyForAuthenticated: ["GET /user/gpg_keys/{gpg_key_id}"],
     getPublicSshKeyForAuthenticated: ["GET /user/keys/{key_id}"],
     list: ["GET /users"],
-    listBlockedByAuthenticated: ["GET /user/blocks"],
+    listBlockedByAuthenticated: ["GET /user/blocks", {
+      mediaType: {
+        previews: ["giant-sentry-fist"]
+      }
+    }],
     listEmailsForAuthenticated: ["GET /user/emails"],
     listFollowedByAuthenticated: ["GET /user/following"],
     listFollowersForAuthenticatedUser: ["GET /user/followers"],
@@ -5928,13 +6468,17 @@ const Endpoints = {
     listPublicKeysForUser: ["GET /users/{username}/keys"],
     listPublicSshKeysForAuthenticated: ["GET /user/keys"],
     setPrimaryEmailVisibilityForAuthenticated: ["PATCH /user/email/visibility"],
-    unblock: ["DELETE /user/blocks/{username}"],
+    unblock: ["DELETE /user/blocks/{username}", {
+      mediaType: {
+        previews: ["giant-sentry-fist"]
+      }
+    }],
     unfollow: ["DELETE /user/following/{username}"],
     updateAuthenticated: ["PATCH /user"]
   }
 };
 
-const VERSION = "4.2.0";
+const VERSION = "4.4.3";
 
 function endpointsToMethods(octokit, endpointsMap) {
   const newMethods = {};
@@ -6074,7 +6618,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
 var request = __webpack_require__(753);
 var universalUserAgent = __webpack_require__(796);
 
-const VERSION = "4.5.6";
+const VERSION = "4.5.8";
 
 class GraphqlError extends Error {
   constructor(request, response) {
