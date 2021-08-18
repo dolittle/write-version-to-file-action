@@ -2,125 +2,36 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 import * as core from '@actions/core';
-import { Logger } from '@dolittle/github-actions.shared.logging';
 import * as github from '@actions/github';
-
+import { exec } from '@actions/exec';
+import path from 'path';
 import editJsonFile from 'edit-json-file';
-import { Octokit } from '@octokit/core';
-
-import * as fs from 'fs';
+import { Logger } from '@dolittle/github-actions.shared.logging';
 
 const logger = new Logger();
-
-async function getCurrentCommit(
-    octo: Octokit,
-    owner: string,
-    repo: string,
-    ref: string) {
-
-    const { data: refData } = await octo.git.getRef({
-        owner,
-        repo,
-        ref,
-    });
-
-    const commitSha = refData.object.sha;
-    const { data: commitData } = await octo.git.getCommit({
-        owner: owner,
-        repo,
-        commit_sha: commitSha,
-    });
-
-    return {
-        commitSha,
-        treeSha: commitData.tree.sha,
-    };
-}
-
-async function createNewTree(
-    octo: Octokit,
-    owner: string,
-    repo: string,
-    blobs: any[],
-    paths: string[],
-    parentTreeSha: string) {
-
-    // My custom config. Could be taken as parameters
-    const tree = blobs.map(({ sha }, index) => ({
-        path: paths[index],
-        mode: '100644',
-        type: 'blob',
-        sha,
-    }));
-
-    const { data } = await octo.git.createTree({
-        owner,
-        repo,
-        tree,
-        base_tree: parentTreeSha,
-    });
-
-    return data;
-}
-
-const getFileAsUTF8 = (filePath: string) => fs.promises.readFile(filePath, 'utf8');
-
-async function createBlobForFile(octo: Octokit, org: string, repo: string, filePath: string) {
-    const content = await getFileAsUTF8(filePath);
-    const blobData = await octo.git.createBlob({
-        owner: org,
-        repo,
-        content,
-        encoding: 'utf-8',
-    });
-
-    return blobData.data;
-}
 
 run();
 export async function run() {
     try {
-        const path = core.getInput('path', { required: true });
         const version = core.getInput('version', { required: true });
-        const token = core.getInput('token', { required: true });
+        const path = core.getInput('path', { required: true });
 
-        logger.info(`Path : ${path}`);
-        logger.info(`Version: ${version}`);
+        const userEmail = core.getInput('user-email', { required: false }) || 'build@dolittle.com';
+        const userName = core.getInput('user-name', { required: false }) || 'dolittle-build';
 
-        const octokit = github.getOctokit(token);
+        const commitSHA = github.context.sha;
+        const buildDate = new Date().toISOString();
 
-        const currentRepo = github.context.repo;
-        const currentRef = github.context.ref.replace('refs/', '');
+        logger.info('Writing build version information to file');
+        logger.info(`\tPath : ${path}`);
+        logger.info(`\tVersion: ${version}`);
+        logger.info(`\tCommit: ${commitSHA}`);
+        logger.info(`\tBuilt: ${buildDate}`);
 
-        logger.info(`Current repo ${currentRepo.owner} - ${currentRepo.repo}`);
+        updateVersionFile(path, version, commitSHA, buildDate);
+        await commitVersionFile(path, version, userEmail, userName);
+        await pushChanges();
 
-        const file = editJsonFile(path);
-        file.set('version', version);
-        file.set('commit', github.context.sha);
-        file.set('built', new Date().toISOString());
-        file.save();
-
-        const currentCommit = await getCurrentCommit(octokit, currentRepo.owner, currentRepo.repo, currentRef);
-
-        const blob = await createBlobForFile(octokit, currentRepo.owner, currentRepo.repo, path);
-
-        const tree = await createNewTree(octokit, currentRepo.owner, currentRepo.repo, [blob], [path], currentCommit.treeSha);
-        const newCommit = await octokit.git.createCommit({
-            owner: currentRepo.owner,
-            repo: currentRepo.repo,
-            message: 'Updating version information',
-            tree: tree.sha,
-            parents: [currentCommit.commitSha]
-        });
-
-        await octokit.git.updateRef({
-            owner: currentRepo.owner,
-            repo: currentRepo.repo,
-            ref: currentRef,
-            sha: newCommit.data.sha
-        });
-
-        logger.info('Version updated, written and committed');
     } catch (error) {
         logger.info(`Error : ${error}`);
         fail(error);
@@ -130,4 +41,37 @@ export async function run() {
 function fail(error: Error) {
     logger.error(error.message);
     core.setFailed(error.message);
+}
+
+function updateVersionFile(filePath: string, version: string, commitSHA: string, buildDate: string) {
+    logger.info(`Updating version file ${filePath}`);
+    const file = editJsonFile(filePath);
+    file.set('version', version);
+    file.set('commit', commitSHA);
+    file.set('built', buildDate);
+    file.save();
+}
+
+async function commitVersionFile(filePath: string, version: string, userEmail: string, userName: string) {
+    logger.info(`Adding and committing ${filePath}`);
+    await exec('git add', [filePath]);
+    await exec(
+        'git commit',
+        [
+            `-m "Update to ${version} in version file"`
+        ],
+        {
+            env: {
+                GIT_AUTHOR_NAME: userName,
+                GIT_AUTHOR_EMAIL: userEmail,
+                GIT_COMMITTER_NAME: userName,
+                GIT_COMMITTER_EMAIL: userEmail,
+            },
+        });
+}
+
+async function pushChanges() {
+    const branchName = path.basename(github.context.ref);
+    logger.info(`Pushing changelog to origin ${branchName}`);
+    await exec('git push origin', [branchName]);
 }
