@@ -20,8 +20,9 @@ For more information, reference the GitHub Help Documentation for [Creating a wo
 ### Inputs
 
 - `version`: The version number to use.
-- `token`: The GitHub token to use for the commit.
 - `path`: The path to the file within the repository.
+- `user-email`: The email of the user that commits the version file.
+- `user-name`: The name of the user that commits the version file.
 
 For information on how GitHub actions tokens work, read more [here](https://help.github.com/en/actions/automating-your-workflow-with-github-actions/authenticating-with-the-github_token#about-the-github_token-secret).
 
@@ -48,8 +49,9 @@ jobs:
         uses: dolittle/write-version-to-file-action@v2
         with:
           version: ${{ steps.context.outputs.current-version }}
-          token: ${{ secrets.GITHUB_TOKEN }}
           path: ./Source/version.json
+          user-email: build@dolittle.com
+          user-name: dolittle-build
 ```
 
 ## Contributing
