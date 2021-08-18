@@ -22,7 +22,7 @@ export async function run() {
         const commitSHA = github.context.sha;
         const buildDate = new Date().toISOString();
 
-        logger.info(`Writing build version information to file`);
+        logger.info('Writing build version information to file');
         logger.info(`\tPath : ${path}`);
         logger.info(`\tVersion: ${version}`);
         logger.info(`\tCommit: ${commitSHA}`);
@@ -73,5 +73,5 @@ async function commitVersionFile(filePath: string, version: string, userEmail: s
 async function pushChanges() {
     const branchName = path.basename(github.context.ref);
     logger.info(`Pushing changelog to origin ${branchName}`);
-    await exec(`git push origin`, [branchName]);
+    await exec('git push origin', [branchName]);
 }
