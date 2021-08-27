@@ -1,3 +1,13 @@
+# [2.0.1] - 2021-8-27 [PR: #17](https://github.com/dolittle/write-version-to-file-action/pull/17)
+## Summary
+
+Pull before pushing commit
+
+### Changed
+
+- Does a git pull before git push
+
+
 # [2.0.0] - 2021-8-18 [PR: #16](https://github.com/dolittle/write-version-to-file-action/pull/16)
 ## Summary
 
