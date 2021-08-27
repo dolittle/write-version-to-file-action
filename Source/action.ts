@@ -29,6 +29,7 @@ export async function run() {
         logger.info(`\tBuilt: ${buildDate}`);
 
         updateVersionFile(path, version, commitSHA, buildDate);
+        await configureUser(userEmail, userName);
         await commitVersionFile(path, version, userEmail, userName);
         await pushChanges();
 
@@ -68,6 +69,24 @@ async function commitVersionFile(filePath: string, version: string, userEmail: s
                 GIT_COMMITTER_EMAIL: userEmail,
             },
         });
+}
+
+async function configureUser(userEmail: string, userName: string) {
+    logger.info(`Configuring user with email '${userEmail}' and name '${userName}'`);
+    await exec(
+        'git config',
+        [
+            'user.email',
+            `"${userEmail}"`
+        ],
+        { ignoreReturnCode: true });
+    await exec(
+        'git config',
+        [
+            'user.name',
+            `"${userName}"`
+        ],
+        { ignoreReturnCode: true });
 }
 
 async function pushChanges() {
