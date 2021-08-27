@@ -73,5 +73,6 @@ async function commitVersionFile(filePath: string, version: string, userEmail: s
 async function pushChanges() {
     const branchName = path.basename(github.context.ref);
     logger.info(`Pushing changelog to origin ${branchName}`);
+    await exec('git pull origin', [branchName]);
     await exec('git push origin', [branchName]);
 }
