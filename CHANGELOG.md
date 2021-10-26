@@ -1,3 +1,9 @@
+# [2.1.0] - 2021-10-26 [PR: #19](https://github.com/dolittle/write-version-to-file-action/pull/19)
+## Summary
+
+Adds a `merge-strategies` input that defines how `git pull` should deal with diverging branches. Can be either `merge` (default), `rebase` or `fast-forward`.
+
+
 # [2.0.2] - 2021-8-27 [PR: #18](https://github.com/dolittle/write-version-to-file-action/pull/18)
 ## Summary
 
