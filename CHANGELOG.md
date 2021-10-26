@@ -1,3 +1,9 @@
+# [2.0.2] - 2021-8-27 [PR: #18](https://github.com/dolittle/write-version-to-file-action/pull/18)
+## Summary
+
+Configure the git user before pulling to avoid it crashing
+
+
 # [2.0.1] - 2021-8-27 [PR: #17](https://github.com/dolittle/write-version-to-file-action/pull/17)
 ## Summary
 
