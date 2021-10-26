@@ -18,6 +18,7 @@ export async function run() {
 
         const userEmail = core.getInput('user-email', { required: false }) || 'build@dolittle.com';
         const userName = core.getInput('user-name', { required: false }) || 'dolittle-build';
+        const mergeStrategy = core.getInput('merge-strategy', { required: false }) || 'merge';
 
         const commitSHA = github.context.sha;
         const buildDate = new Date().toISOString();
@@ -30,6 +31,7 @@ export async function run() {
 
         updateVersionFile(path, version, commitSHA, buildDate);
         await configureUser(userEmail, userName);
+        await configurePull(mergeStrategy);
         await commitVersionFile(path, version, userEmail, userName);
         await pushChanges();
 
@@ -87,6 +89,47 @@ async function configureUser(userEmail: string, userName: string) {
             `"${userName}"`
         ],
         { ignoreReturnCode: true });
+}
+
+async function configurePull(mergeStrategy: string) {
+    logger.info(`Configure git pull as '${mergeStrategy}''`);
+    switch (mergeStrategy) {
+        case 'rebase':
+            await exec(
+                'git config',
+                [
+                    'pull.rebase',
+                    'true'
+                ]
+            );
+            break;
+        case 'fast-forward':
+            await exec(
+                'git config',
+                [
+                    'pull.ff',
+                    'only'
+                ]
+            );
+            break;
+        case 'merge':
+            await exec(
+                'git config',
+                [
+                    'pull.rebase',
+                    'false'
+                ]
+            );
+            break;
+        default:
+            await exec(
+                'git config',
+                [
+                    'pull.rebase',
+                    'false'
+                ]
+            );
+    }
 }
 
 async function pushChanges() {

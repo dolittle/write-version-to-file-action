@@ -15,6 +15,10 @@ inputs:
     description: The name of the user that commits the version file
     required: false
     default: 'dolittle-build'
+  merge-strategy:
+      description: How to reconcile divergent branches. Can be either 'merge'(default), 'rebase' or 'fast-forward'
+      required: false
+      default: 'merge'
  
 runs:
   using: 'node12'
