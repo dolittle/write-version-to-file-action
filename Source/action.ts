@@ -92,7 +92,7 @@ async function configureUser(userEmail: string, userName: string) {
 }
 
 async function configurePull(mergeStrategy: string) {
-    logger.info(`Configure git pull as '${mergeStrategy}''`);
+    logger.info(`Configure git pull as '${mergeStrategy}'`);
     switch (mergeStrategy) {
         case 'rebase':
             await exec(
