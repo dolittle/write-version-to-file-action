@@ -1,3 +1,9 @@
+# [2.1.2] - 2022-12-7 [PR: #21](https://github.com/dolittle/write-version-to-file-action/pull/21)
+## Summary
+
+Update deps and modernise
+
+
 # [2.1.1] - 2021-10-26 [PR: #20](https://github.com/dolittle/write-version-to-file-action/pull/20)
 ## Summary
 
