@@ -1,3 +1,9 @@
+# [2.1.1] - 2021-10-26 [PR: #20](https://github.com/dolittle/write-version-to-file-action/pull/20)
+## Summary
+
+Remove extra quote
+
+
 # [2.1.0] - 2021-10-26 [PR: #19](https://github.com/dolittle/write-version-to-file-action/pull/19)
 ## Summary
 
