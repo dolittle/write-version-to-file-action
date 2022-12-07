@@ -11,6 +11,9 @@ import { Logger } from '@dolittle/github-actions.shared.logging';
 const logger = new Logger();
 
 run();
+/**
+ * Runs the action.
+ */
 export async function run() {
     try {
         const version = core.getInput('version', { required: true });
@@ -35,7 +38,7 @@ export async function run() {
         await commitVersionFile(path, version, userEmail, userName);
         await pushChanges();
 
-    } catch (error) {
+    } catch (error: any) {
         logger.info(`Error : ${error}`);
         fail(error);
     }
